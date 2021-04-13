@@ -424,6 +424,7 @@ int create_swapchain(VkState* v){
     }
     vkGetSwapchainImagesKHR( v->device, v->swapchain, &image_count, NULL );
     v->swapchain_size = image_count;
+    v->swapchain_format = surface_format.format;
     VDBG("Swapchain created with %d images", image_count);
     if(image_count > MAX_IMAGE_COUNT) VERR("Too many swapchain images");
 }
@@ -516,6 +517,53 @@ int record_command_buffers(VkState* v){
     }
     VDBG("Command buffers recorded");
     return VK_SUCCESS;
+}
+int create_render_pass(VkState* v){
+    VkAttachmentDescription attachment_descriptions[] = {
+        {
+            .flags = 0,
+            .format = v->swapchain_format,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        }
+    };
+    VkAttachmentReference color_attachments[] = {
+        {
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        }
+    };
+    VkSubpassDescription subpass_descriptions[] = {
+        {
+            .flags = 0,
+            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+            .inputAttachmentCount = 0,
+            .pInputAttachments = NULL,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = color_attachments,
+            .pResolveAttachments = NULL,
+            .pDepthStencilAttachment = NULL,
+            .preserveAttachmentCount = 0,
+            .pResolveAttachments = NULL
+        }
+    };
+    VkRenderPassCreateInfo render_pass_create_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .attachmentCount = 1,
+        .pAttachments = attachment_descriptions,
+        .subpassCount = 1,
+        .pSubpasses = subpass_descriptions,
+        .dependencyCount = 0,
+        .pDependencies = NULL
+    };
+    vkCreateRenderPass( v->device, &render_pass_create_info, NULL, &v->render_pass );
 }
 
 int draw(VkState* v){
