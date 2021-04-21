@@ -1,3 +1,5 @@
 *.o
 .*
+*.spv
 demo1
+demo2

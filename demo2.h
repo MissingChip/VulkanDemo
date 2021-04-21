@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
+#include <string.h>       
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <xcb/xcb.h>
 #define VK_USE_PLATFORM_XCB_KHR
 #include <vulkan/vulkan_core.h>
@@ -25,6 +27,9 @@ extern "C" {
 #define VK_API_VERSION VK_MAKE_VERSION(1, 0, 3)
 #define VK_KHR_XCB_SURFACE_EXTENSION_NAME "VK_KHR_xcb_surface"
 #define WINDOW_MANAGER_EXTENSION_NAME VK_KHR_XCB_SURFACE_EXTENSION_NAME
+#define VSWI VK_COMPONENT_SWIZZLE_IDENTITY
+#define VSTRUCT(NAME) .sType = VK_STRUCTURE_TYPE_##NAME##_CREATE_INFO, .pNext = NULL, .flags = 0,
+#define VSTRUCTF(NAME, FLAGS) .sType = VK_STRUCTURE_TYPE_##NAME##_CREATE_INFO, .pNext = NULL, .flags = FLAGS,
 
 #define BAD UINT32_MAX
 #define S(x) #x
@@ -85,6 +90,7 @@ inline void verr(const char* fmt, ...){
 
 OC(typedef) struct VkState {
     VkInstance instance;
+    float width, height;
     VkPhysicalDevice physical_device;
     uint32_t graphics_queue_family_index;
     uint32_t present_queue_family_index;
@@ -97,9 +103,15 @@ OC(typedef) struct VkState {
     VkSwapchainKHR swapchain;
     VkFormat swapchain_format;
     int swapchain_size;
-    VkCommandPool present_queue_command_pool;
-    VkCommandBuffer present_queue_command_buffers[MAX_IMAGE_COUNT];
+    VkCommandPool command_pool;
+    // VkCommandBuffer present_command_buffers[MAX_IMAGE_COUNT];
+    VkCommandBuffer graphics_command_buffers[MAX_IMAGE_COUNT];
+    VkImageView image_views[MAX_IMAGE_COUNT];
+    VkFramebuffer framebuffers[MAX_IMAGE_COUNT];
     VkRenderPass render_pass;
+    // VkPipelineLayout pipeline_layout;
+    VkPipeline graphics_pipeline;
+    
 } OC(VkState);
 
 OC(typedef) struct XState {
@@ -109,7 +121,7 @@ OC(typedef) struct XState {
 
 int check_instance_extensions();
 int check_instance_layers();
-int connect_x(XState* x);
+int connect_x(VkState* v, XState* x);
 int create_instance(VkState* v);
 int choose_phys_device(VkState* v);
 int choose_queue_family(VkState* v);
@@ -122,6 +134,9 @@ int create_command_pool(VkState* v);
 int create_command_buffers(VkState* v);
 int record_command_buffers(VkState* v);
 int create_render_pass(VkState* v);
+int create_framebuffers(VkState* v);
+VkShaderModule create_shader_module(VkState* v, const char* filename);
+int create_pipeline(VkState* v);
 int draw(VkState* v);
 int recreate_swapchain(VkState* v);
 

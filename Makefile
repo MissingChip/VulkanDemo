@@ -1,3 +1,8 @@
 
-demo1: demo1.c demo1.h Makefile
+SHADERS = vert.spv frag.spv
+
+demo%: demo%.c demo%.h Makefile $(SHADERS)
 	gcc $< -o $@ -lvulkan -lxcb -g
+
+%.spv: shader.%
+	glslc $^ -o $@
